@@ -21,33 +21,14 @@ function init() {
   let audioContext = new (window.AudioContext || window.webkitAudioContext)();
   let masterGainNode = audioContext.createGain();
   let songBuffer = null;
-  let path = "../assets/sampleTrackForWeb.mp3";
-
-  async function playSong() {
-    console.log("CLICKED");
-    fetch(path)
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) =>
-        audioContext.decodeAudioData(
-          arrayBuffer,
-          (audioBuffer) => {
-            console.log(audioBuffer);
-            songBuffer = audioBuffer;
-            const playSound = audioContext.createBufferSource();
-            playSound.buffer = audioBuffer;
-            playSound.connect(audioContext.destination);
-            playSound.start(0);
-          },
-          (error) => console.error(error)
-        )
-      );
-  }
+  let path1 = "../assets/sampleTrackForWeb.mp3";
+  let path2 = "../assets/AUDIO_2703.m4a";
 
   function getData() {
     songBuffer = audioContext.createBufferSource();
     var request = new XMLHttpRequest();
 
-    request.open("GET", path, true);
+    request.open("GET", path2, true);
 
     request.responseType = "arraybuffer";
 
@@ -61,7 +42,6 @@ function init() {
           songBuffer.connect(masterGainNode);
           songBuffer.loop = true;
           songBuffer.start(0);
-          console.log(songBuffer);
         },
 
         function (e) {
