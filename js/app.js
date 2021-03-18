@@ -253,57 +253,72 @@ function init() {
     );
 
   function drawPattern1() {
-    console.log("HERE");
     context.clearRect(0, 0, w, h);
     context.globalCompositeOperation = "lighter";
-    analyser.getByteFrequencyData(dataArray);
-    context.fillStyle = "rgba(0, 255, 255, .7)";
+    analyser.getByteTimeDomainData(dataArray);
+    context.fillStyle =
+      dataArray[0] === 0
+        ? "rgba(0, 255, 255, .7)"
+        : colors[Math.round(Math.random() * 5)];
 
     time += 0.1;
 
-    for (let i = 0; i < bufferLength; i++) {
-      r =
-        dataArray[i] +
-        w * (sin((time + i) * (0.05 + (cos(time * 0.00002) / PI) * 0.2)) / PI);
-
-      context.fillRect(tan(i) * r + w / 2, sin(i) * r + h / 2, 2, 2);
-    }
     context.fillStyle =
       dataArray[0] === 0
         ? "rgba(0, 255, 255, .7)"
         : colors[Math.round(Math.random() * 15)];
+    console.log(dataArray[0]);
 
-    for (let i = 0; i < bufferLength / 2; i++) {
-      let v = dataArray[i] > 120 ? dataArray[i] / 64 : 1;
-      let y = dataArray > 120 ? v * h : h;
-      let m = dataArray[i] > 120 ? 0.05 : 1;
-      let p = dataArray[i] === 132 ? 10 : 7;
-      r =
-        (((w + y) * dataArray[i + 100]) / 150) *
-        (sin(
-          (time + i / dataArray[i]) * (m + (tan(time * 0.00002) / PI) * 0.2)
-        ) /
-          PI);
+    let x = 0;
+    let sliceWidth = (w * 1.0) / bufferLength;
 
-      context.fillRect(
-        sin(i) * r + w / 2,
-        tan(Math.round(Math.random() / i)) * r + h / 2,
-        p,
-        p
-      );
-    }
-
-    if (dataArray[0] > 170) {
       for (let i = 0; i < bufferLength; i++) {
-        let v = dataArray[i] > 120 ? dataArray[i] / 64 : 1;
-        let y = dataArray > 120 ? v * h : h;
-        let m = dataArray[i] > 120 ? 0.05 : 1;
-        let p = dataArray[i] === 132 ? 10 : 7;
-        r = (w + y) * (sin(time * (m + (cos(time * 0.00002) / PI) * 0.2)) / PI);
-
-        context.fillRect(cos(i) * r + w / 2, sin(i) * r + h / 2, p, p);
+        let v = dataArray[i] / 128.0;
+        let y = (v * canvas.height) / 2;
+  
+        if (i === 0) {
+          context.moveTo(x, y);
+        } else {
+          context.fillRect(sin(x) + x, y, 5, 5);
+        }
+        x += sliceWidth
       }
-    }
+      analyser.getByteFrequencyData(dataArray);
+
+      let x1 = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          let v = dataArray[i] / 128.0;
+          let y = (v * canvas.height) / 2;
+    
+          if (i === 0) {
+            context.moveTo(x1, y);
+          } else {
+            context.fillRect(x1, y / 2, 3, 3);
+          }
+          x1 += sliceWidth + .5
+        }
+
+
+    // if (!dataArray[0] === 0 || dataArray[0] > 195) {
+    //   for (let i = 0; i < bufferLength; i++) {
+    //     let v = dataArray[i] > 120 ? dataArray[i] / 64 : 1;
+    //     let y = dataArray > 120 ? v * h : h;
+    //     let m = dataArray[i] > 120 ? 0.05 : 1;
+    //     let p = dataArray[i] === 132 ? 10 : 7;
+    //     r =
+    //       (w + y) *
+    //       (sin(time * (m + (cos(time * 0.000002) / PI) * 0.2) - 1) / PI);
+
+    //     context.fillRect(
+    //       Math.round(Math.random() * 100) +
+    //         cos(i - Math.round(Math.random())) * r +
+    //         w / 2,
+    //       sin(i) * r + h / 2,
+    //       p,
+    //       p
+    //     );
+    //   }
+    // }
   }
 
   function getMousePosition(e) {
