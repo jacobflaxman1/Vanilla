@@ -8,6 +8,9 @@ function init() {
   playButton.innerText = "Start";
   playButton.addEventListener("click", () => getData());
 
+  let noiseGenerator = d.getElementById("noise-generator");
+  noiseGenerator.addEventListener("click", () => playTone());
+
   let canvas = d.body.appendChild(d.createElement("canvas"));
   let context = canvas.getContext("2d");
 
@@ -114,7 +117,7 @@ function init() {
 
   const filter = audioContext.createBiquadFilter();
 
-  function playTone(time) {
+  function playTone() {
     let oscillator1 = audioContext.createOscillator();
     oscillator1.type = "sine";
     oscillator1.frequency.value =
@@ -150,15 +153,15 @@ function init() {
       Math.random() * octaveMultiplier + 246.941650628062055;
 
     let gain1 = audioContext.createGain();
-    gain1.gain.setValueAtTime(0.4, time);
+    gain1.gain.setValueAtTime(0.4, 0.25);
     let gain2 = audioContext.createGain();
-    gain2.gain.setValueAtTime(0.4, time);
+    gain2.gain.setValueAtTime(0.4, 0.25);
     let gain3 = audioContext.createGain();
-    gain3.gain.setValueAtTime(0.6, time);
+    gain3.gain.setValueAtTime(0.6, 0.25);
     let gain4 = audioContext.createGain();
-    gain4.gain.setValueAtTime(0.6, time);
+    gain4.gain.setValueAtTime(0.6, 0.25);
     let gain5 = audioContext.createGain();
-    gain5.gain.setValueAtTime(0.6, time);
+    gain5.gain.setValueAtTime(0.6, 0.25);
 
     let masterOscGain = audioContext.createGain();
     masterGainNode.gain.value = 1;
@@ -199,33 +202,33 @@ function init() {
     } else if (rand > 1.5 && rand < 2) {
       oscillator1.start();
       oscillator2.start();
-      oscillator2.stop(now + randTime / 2);
-      oscillator1.stop(now + randTime / 2);
+      oscillator2.stop(now + randTime * 2);
+      oscillator1.stop(now + randTime * 2);
     } else if (rand > 2 && rand < 2.5) {
       oscillator2.start();
       oscillator3.start();
-      oscillator3.stop(now + randTime / 2);
-      oscillator2.stop(now + randTime / 2);
+      oscillator3.stop(now + randTime * 2);
+      oscillator2.stop(now + randTime * 2);
     } else if (rand > 2.5 && rand < 3) {
       oscillator2.start();
-      oscillator2.stop(now + randTime / 2);
+      oscillator2.stop(now + randTime * 2);
     } else if (rand > 3 && rand < 4) {
       oscillator3.start();
-      oscillator3.stop(now + randTime / 2);
+      oscillator3.stop(now + randTime * 2);
     } else if (rand > 4 && rand < 5) {
       oscillator4.start();
-      oscillator4.stop(now + randTime / 2);
+      oscillator4.stop(now + randTime * 2);
     } else if (rand > 5 && rand < 6) {
       oscillator5.start();
-      oscillator5.stop(now + randTime / 2);
+      oscillator5.stop(now + randTime * 2);
     } else if (rand > 6 && rand < 7) {
       oscillator6.start();
-      oscillator6.stop(now + randTime / 2);
+      oscillator6.stop(now + randTime * 2);
       oscillator3.start();
-      oscillator3.stop(now + randTime / 2);
+      oscillator3.stop(now + randTime * 2);
     } else if (rand > 7 && rand < 8) {
       oscillator7.start();
-      oscillator7.stop(now + randTime / 2);
+      oscillator7.stop(now + randTime * 2);
     }
 
     // oscillator1.stop(now + 1);
