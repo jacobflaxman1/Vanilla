@@ -7,9 +7,6 @@ function init() {
   playButton.innerText = "Start";
   playButton.addEventListener("click", () => getData());
 
-  let nSlider = d.getElementsByClassName("numParticle-slider");
-  nSlider[0].addEventListener("change", (e) => changeNumParticles(e));
-
   let canvas = d.body.appendChild(d.createElement("canvas"));
   let context = canvas.getContext("2d");
   let time = 0;
@@ -20,10 +17,6 @@ function init() {
   let octaveMultiplier = 5;
 
   let numParticles = 20000;
-
-  function changeNumParticles(e) {
-    numParticles = e.target.value;
-  }
 
   let audioContext = new (window.AudioContext || window.webkitAudioContext)();
   let masterGainNode = audioContext.createGain();
@@ -231,7 +224,6 @@ function init() {
     context.clearRect(0, 0, w, h);
     context.globalCompositeOperation = "lighter";
     analyser.getByteFrequencyData(dataArray);
-    console.log("frequ", dataArray);
     context.fillStyle =
       dataArray[0] === 128 || Math.random() * 2 > 1
         ? "rgba(0, 255, 255, .7)"
