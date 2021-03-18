@@ -1,12 +1,11 @@
-(function () {
+function init() {
   let d = document;
   d.onmousemove = getMousePosition;
-
   let playButton = d.createElement("button");
   playButton.classList.add("play-button");
   d.body.append(playButton);
   playButton.innerText = "Start";
-  playButton.addEventListener("click", () => playTone(0.25));
+  playButton.addEventListener("click", () => getData());
 
   let nSlider = d.getElementsByClassName("numParticle-slider");
   nSlider[0].addEventListener("change", (e) => changeNumParticles(e));
@@ -20,15 +19,67 @@
   let PI = Math.PI;
   let octaveMultiplier = 5;
 
-  let numParticles = 50000;
+  let numParticles = 20000;
 
   function changeNumParticles(e) {
-    console.log(e.target);
     numParticles = e.target.value;
   }
 
   let audioContext = new (window.AudioContext || window.webkitAudioContext)();
   let masterGainNode = audioContext.createGain();
+  let songBuffer = null;
+  let path = "../assets/sampleTrackForWeb.mp3";
+
+  async function playSong() {
+    console.log("CLICKED");
+    fetch(path)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) =>
+        audioContext.decodeAudioData(
+          arrayBuffer,
+          (audioBuffer) => {
+            console.log(audioBuffer);
+            songBuffer = audioBuffer;
+            const playSound = audioContext.createBufferSource();
+            playSound.buffer = audioBuffer;
+            playSound.connect(audioContext.destination);
+            playSound.start(0);
+          },
+          (error) => console.error(error)
+        )
+      );
+  }
+
+  function getData() {
+    songBuffer = audioContext.createBufferSource();
+    var request = new XMLHttpRequest();
+
+    request.open("GET", path, true);
+
+    request.responseType = "arraybuffer";
+
+    request.onload = function () {
+      var audioData = request.response;
+
+      audioContext.decodeAudioData(
+        audioData,
+        function (buffer) {
+          songBuffer.buffer = buffer;
+          songBuffer.connect(masterGainNode);
+          songBuffer.loop = true;
+          songBuffer.start(0);
+          console.log(songBuffer);
+        },
+
+        function (e) {
+          console.log("Error with decoding audio data" + e.err);
+        }
+      );
+    };
+
+    request.send();
+    audioContext.resume();
+  }
 
   const analyser = audioContext.createAnalyser();
   analyser.fftSize = 2048;
@@ -179,71 +230,38 @@
   function drawPattern1() {
     context.clearRect(0, 0, w, h);
     context.globalCompositeOperation = "lighter";
-    analyser.getByteTimeDomainData(dataArray);
+    analyser.getByteFrequencyData(dataArray);
+    console.log("frequ", dataArray);
     context.fillStyle =
-      dataArray[0] === 128
+      dataArray[0] === 128 || Math.random() * 2 > 1
         ? "rgba(0, 255, 255, .7)"
         : colors[Math.round(Math.random() * 15)];
 
     time += 0.1;
 
-    // The number of particles to generate
-    let visualizerFactor = dataArray[0];
-    let factor1 = tan;
-    let factor2 = cos;
-    let factor3 = tan;
-
-    if (visualizerFactor > 130) {
-      factor1 = sin;
-      factor2 = sin;
-      factor3 = sin;
-    } else if (visualizerFactor > 110 && visualizerFactor < 130) {
-      factor1 = tan;
-      factor2 = tan;
-      factor3 = cos;
-    } else if (visualizerFactor > 90 && visualizerFactor < 110) {
-      factor1 = sin;
-      factor2 = sin;
-      factor3 = sin;
-    } else if (visualizerFactor > 70 && visualizerFactor < 90) {
-      factor1 = cos;
-      factor2 = cos;
-      factor3 = cos;
-    } else if (visualizerFactor > 80 && visualizerFactor < 90) {
-      factor1 = tan;
-      factor2 = sin;
-      factor3 = cos;
-    } else if (visualizerFactor < 80) {
-      factor1 = tan;
-      factor2 = cos;
-      factor3 = sin;
-    }
-
-    i = numParticles;
-    while (i--) {
-      let v = dataArray[i] / 35;
-      let y = mouseY;
+    for (let i = 0; i < bufferLength; i++) {
+      let v = dataArray[i] > 120 ? dataArray[i] / 64 : 1;
+      let y = v * h;
+      let m = dataArray[i] > 130 ? 0.05 : 1;
+      let p = dataArray[i] === 132 ? 10 : 7;
       r =
-        y *
-        0.4 *
-        (factor1((time + i) * (0.05 + (factor1(time * 0.00002) / PI) * 0.2)) /
-          PI);
-      context.fillRect(
-        factor1(i) * r + mouseX / 10 + w / 2,
-        factor3(i) * r + mouseY / 10 + h / 2,
-        2,
-        4
-      );
+        (w + y / 4) *
+        0.6 *
+        (sin((time + i) * (m + (cos(time * 0.00002) / PI) * 0.2)) / PI);
+
+      context.fillRect(sin(i) * r + w / 2, cos(i + p) * r + h / 2, p, p);
     }
   }
 
   function getMousePosition(e) {
     mouseX = e.clientX;
     mouseY = e.clientY;
-    console.log(mouseX, mouseY);
   }
 
-  setInterval(() => drawPattern1(), 20);
-  setInterval(() => playTone(0.25), Math.random() * 1000);
+  setInterval(() => drawPattern1(), 16);
+
+  // setInterval(() => playTone(0.25), Math.random() * 1000);
   // setInterval(() => playTone(Math.random() * 5), Math.random() * 5000);
-})();
+}
+
+init();
