@@ -1,6 +1,7 @@
 function init() {
   let d = document;
   d.onmousemove = getMousePosition;
+
   let playButton = d.createElement("button");
   playButton.classList.add("play-button");
   d.body.append(playButton);
@@ -9,6 +10,7 @@ function init() {
 
   let canvas = d.body.appendChild(d.createElement("canvas"));
   let context = canvas.getContext("2d");
+
   let time = 0;
   let sin = Math.sin;
   let cos = Math.cos;
@@ -16,41 +18,88 @@ function init() {
   let PI = Math.PI;
   let octaveMultiplier = 5;
 
-  let numParticles = 20000;
-
   let audioContext = new (window.AudioContext || window.webkitAudioContext)();
   let masterGainNode = audioContext.createGain();
   let songBuffer = null;
   let path1 = "../assets/sampleTrackForWeb.mp3";
   let path2 = "../assets/AUDIO_2703.m4a";
 
-  function getData() {
-    songBuffer = audioContext.createBufferSource();
-    var request = new XMLHttpRequest();
+  let playForm = d.getElementById("playerForm");
+  playForm.playButton.onclick = function (event) {
+    event.stopPropagation();
+    // I've added two basic validation checks here, but in a real world use case you'd probably be a little more stringient.
+    // Be aware that Firefox uses 'audio/mpeg' as the MP3 MIME type, Chrome uses 'audio/mp3'.
+    var fileInput = document.forms[0].audioSelect;
+    if (
+      fileInput.files.length > 0 &&
+      ["audio/mpeg", "audio/mp3"].includes(fileInput.files[0].type)
+    ) {
+      getFilesFromUser(fileInput.files[0], function (mp3BytesAsArrayBuffer) {
+        decodeMp3BytesFromArrayBufferAndPlay(mp3BytesAsArrayBuffer);
+      });
+    } else
+      alert("Error! No attached file or attached file was of the wrong type!");
+  };
 
-    request.open("GET", path2, true);
-
-    request.responseType = "arraybuffer";
-
-    request.onload = function () {
-      var audioData = request.response;
-
-      audioContext.decodeAudioData(
-        audioData,
-        function (buffer) {
-          songBuffer.buffer = buffer;
-          songBuffer.connect(masterGainNode);
-          songBuffer.loop = true;
-          songBuffer.start(0);
-        },
-
-        function (e) {
-          console.log("Error with decoding audio data" + e.err);
-        }
-      );
+  function getFilesFromUser(selectedFile, callback) {
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      let mp3BytesAsArrayBuffer = reader.result;
+      callback(mp3BytesAsArrayBuffer);
     };
+    reader.readAsArrayBuffer(selectedFile);
+  }
 
-    request.send();
+  function decodeMp3BytesFromArrayBufferAndPlay(mp3BytesAsArrayBuffer) {
+    audioContext.decodeAudioData(
+      mp3BytesAsArrayBuffer,
+      function (decodedSamplesAsAudioBuffer) {
+        // Clear any existing audio source that we might be using
+        if (songBuffer != null) {
+          songBuffer.disconnect(audioContext.destination);
+          songBuffer = null; // Leave existing source to garbage collection
+        }
+
+        songBuffer = audioContext.createBufferSource();
+        songBuffer.buffer = decodedSamplesAsAudioBuffer; // set the buffer to play to our audio buffer
+        songBuffer.connect(masterGainNode); // connect the source to the output destinarion
+      }
+    );
+    audioContext.resume();
+  }
+
+  function getData() {
+    if (!songBuffer) {
+      songBuffer = audioContext.createBufferSource();
+      var request = new XMLHttpRequest();
+
+      request.open("GET", path2, true);
+
+      request.responseType = "arraybuffer";
+
+      request.onload = function () {
+        var audioData = request.response;
+
+        audioContext.decodeAudioData(
+          audioData,
+          function (buffer) {
+            songBuffer.buffer = buffer;
+            songBuffer.connect(masterGainNode);
+            songBuffer.loop = true;
+            songBuffer.start(0);
+          },
+
+          function (e) {
+            console.log("Error with decoding audio data" + e.err);
+          }
+        );
+      };
+
+      request.send();
+    } else {
+      songBuffer.start(0);
+    }
+
     audioContext.resume();
   }
 
@@ -201,27 +250,56 @@ function init() {
     );
 
   function drawPattern1() {
+    console.log("HERE");
     context.clearRect(0, 0, w, h);
     context.globalCompositeOperation = "lighter";
     analyser.getByteFrequencyData(dataArray);
-    context.fillStyle =
-      dataArray[0] === 128 || Math.random() * 2 > 1
-        ? "rgba(0, 255, 255, .7)"
-        : colors[Math.round(Math.random() * 15)];
+    context.fillStyle = "rgba(0, 255, 255, .7)";
 
     time += 0.1;
 
     for (let i = 0; i < bufferLength; i++) {
+      r =
+        dataArray[i] +
+        w * (sin((time + i) * (0.05 + (cos(time * 0.00002) / PI) * 0.2)) / PI);
+
+      context.fillRect(tan(i) * r + w / 2, sin(i) * r + h / 2, 2, 2);
+    }
+    context.fillStyle =
+      dataArray[0] === 0
+        ? "rgba(0, 255, 255, .7)"
+        : colors[Math.round(Math.random() * 15)];
+
+    for (let i = 0; i < bufferLength / 2; i++) {
       let v = dataArray[i] > 120 ? dataArray[i] / 64 : 1;
-      let y = v * h;
-      let m = dataArray[i] > 130 ? 0.05 : 1;
+      let y = dataArray > 120 ? v * h : h;
+      let m = dataArray[i] > 120 ? 0.05 : 1;
       let p = dataArray[i] === 132 ? 10 : 7;
       r =
-        (w + y / 4) *
-        0.6 *
-        (sin((time + i) * (m + (cos(time * 0.00002) / PI) * 0.2)) / PI);
+        (((w + y) * dataArray[i + 100]) / 150) *
+        (sin(
+          (time + i / dataArray[i]) * (m + (tan(time * 0.00002) / PI) * 0.2)
+        ) /
+          PI);
 
-      context.fillRect(sin(i) * r + w / 2, cos(i + p) * r + h / 2, p, p);
+      context.fillRect(
+        sin(i) * r + w / 2,
+        tan(Math.round(Math.random() / i)) * r + h / 2,
+        p,
+        p
+      );
+    }
+
+    if (dataArray[0] > 170) {
+      for (let i = 0; i < bufferLength; i++) {
+        let v = dataArray[i] > 120 ? dataArray[i] / 64 : 1;
+        let y = dataArray > 120 ? v * h : h;
+        let m = dataArray[i] > 120 ? 0.05 : 1;
+        let p = dataArray[i] === 132 ? 10 : 7;
+        r = (w + y) * (sin(time * (m + (cos(time * 0.00002) / PI) * 0.2)) / PI);
+
+        context.fillRect(cos(i) * r + w / 2, sin(i) * r + h / 2, p, p);
+      }
     }
   }
 
@@ -231,9 +309,5 @@ function init() {
   }
 
   setInterval(() => drawPattern1(), 16);
-
-  // setInterval(() => playTone(0.25), Math.random() * 1000);
-  // setInterval(() => playTone(Math.random() * 5), Math.random() * 5000);
 }
-
 init();
